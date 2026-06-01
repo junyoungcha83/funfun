@@ -10,7 +10,6 @@ const CATS = [
   { id: 'make',   label: '만들기' },
   { id: 'cook',   label: '요리' },
   { id: 'trivia', label: '정보' },
-  { id: 'etc',    label: '기타' },
 ];
 const CAT_LABEL = Object.fromEntries(CATS.map(c => [c.id, c.label]));
 
@@ -64,7 +63,7 @@ function setSyncStatus(s){
 function migrate(loaded){
   const items = (loaded && Array.isArray(loaded.items) ? loaded.items : []).map(it => ({
     id: it.id || genId(),
-    category: CAT_LABEL[it.category] ? it.category : 'etc',
+    category: CAT_LABEL[it.category] ? it.category : 'trivia',
     url: String(it.url || ''),
     title: String(it.title || ''),
     image: String(it.image || ''),
