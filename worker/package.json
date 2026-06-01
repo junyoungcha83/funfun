@@ -1,0 +1,9 @@
+{
+  "name": "funfun-api",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  }
+}

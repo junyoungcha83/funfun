@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Fun fun</title>
+<link rel="stylesheet" href="assets/app.css" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#7c3aed" />
+<link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Fun fun" />
+<link rel="apple-touch-icon" href="assets/icon.svg" />
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Fun fun</h1>
+  <div class="header-right">
+    <span class="sync-status" id="syncStatus"></span>
+    <button class="icon-btn" id="btnEdit" title="편집 잠금/해제" aria-label="편집">🔒</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs" role="tablist" aria-label="분류">
+  <button class="tab active" role="tab" data-cat="make"   aria-selected="true">만들기</button>
+  <button class="tab"        role="tab" data-cat="cook"   aria-selected="false">요리</button>
+  <button class="tab"        role="tab" data-cat="trivia" aria-selected="false">상식</button>
+  <button class="tab"        role="tab" data-cat="etc"    aria-selected="false">기타</button>
+</nav>
+
+<main class="app-main">
+  <div class="cards" id="cards"></div>
+</main>
+
+<button class="fab-add" id="btnAdd" type="button" aria-label="링크 등록">＋</button>
+
+<!-- 등록 모달 -->
+<dialog id="addDialog" class="dialog">
+  <form id="addForm" method="dialog">
+    <h2 id="addTitle">링크 등록</h2>
+    <label class="field">
+      <span>URL</span>
+      <input type="url" id="fUrl" inputmode="url" autocomplete="off"
+             placeholder="https://… (유튜브·블로그·기사 등)" required />
+    </label>
+    <label class="field">
+      <span>분류</span>
+      <select id="fCategory">
+        <option value="make">만들기</option>
+        <option value="cook">요리</option>
+        <option value="trivia">상식</option>
+        <option value="etc">기타</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>메모 (선택)</span>
+      <input type="text" id="fNote" autocomplete="off" placeholder="간단 메모" />
+    </label>
+
+    <!-- 미리보기 (등록 전 확인) -->
+    <div class="preview hidden" id="preview"></div>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="addCancel">취소</button>
+      <button type="button" class="btn" id="addSave">등록</button>
+    </div>
+    <div class="add-status" id="addStatus"></div>
+  </form>
+</dialog>
+
+<script src="assets/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>

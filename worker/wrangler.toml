@@ -1,0 +1,12 @@
+name = "funfun-api"
+main = "src/index.js"
+compatibility_date = "2025-05-01"
+
+# KV — 다음 명령으로 생성 후 id 채우기:
+#   npx wrangler kv namespace create FUNFUN
+[[kv_namespaces]]
+binding = "FUNFUN"
+id = "PUT_KV_ID_HERE"
+
+# 편집 비밀번호는 secret:
+#   echo "토큰" | npx wrangler secret put EDIT_TOKEN
