@@ -1,5 +1,5 @@
 // 정적 자산 오프라인 캐시. 캐시 이름 변경 시 옛 캐시 자동 폐기.
-const CACHE = 'funfun-v3';
+const CACHE = 'funfun-v4';
 const ASSETS = [
   './', './index.html', './assets/app.css', './assets/app.js',
   './manifest.webmanifest', './assets/icon.svg', './assets/icon-maskable.svg',
