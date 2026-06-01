@@ -7,7 +7,8 @@ const SAVE_DEBOUNCE_MS = 800;
 const CATS = [
   { id: 'make',   label: '만들기' },
   { id: 'cook',   label: '요리' },
-  { id: 'trivia', label: '상식' },
+  { id: 'trivia', label: '정보' },
+  { id: 'money',  label: '재테크' },
   { id: 'etc',    label: '기타' },
 ];
 const CAT_LABEL = Object.fromEntries(CATS.map(c => [c.id, c.label]));
