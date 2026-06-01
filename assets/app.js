@@ -165,10 +165,10 @@ function render(){
     return `
       <article class="card" data-id="${escapeAttr(it.id)}">
         <a class="card-link" href="${escapeAttr(it.url)}" target="_blank" rel="noopener noreferrer">
+          ${it.note ? `<div class="card-note-top">${escapeHtml(it.note)}</div>` : ''}
           <div class="thumb-wrap">${img}</div>
           <div class="card-body">
             <div class="card-title">${escapeHtml(it.title || it.url)}</div>
-            ${it.note ? `<div class="card-note">${escapeHtml(it.note)}</div>` : ''}
             <div class="card-domain">${escapeHtml(it.domain || '')}</div>
           </div>
         </a>
