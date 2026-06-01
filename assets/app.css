@@ -137,3 +137,11 @@ body.viewer-open { overflow: hidden; }
 .viewer-host { flex: 1; min-width: 0; font-size: .8rem; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .viewer-open { color: #c4b5fd; text-decoration: none; font-size: .85rem; font-weight: 700; white-space: nowrap; }
 .viewer-frame { flex: 1; width: 100%; border: none; background: #000; }
+.viewer-frame.hidden { display: none; }
+.viewer-fallback {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 28px; text-align: center; color: #e5e7eb; background: #000;
+}
+.viewer-fallback.hidden { display: none; }
+.viewer-fallback p { margin: 0; line-height: 1.6; font-size: .95rem; }
+.viewer-fallback .btn { background: var(--primary); color: #fff; text-decoration: none; padding: 12px 24px; }

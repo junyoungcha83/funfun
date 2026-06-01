@@ -206,11 +206,36 @@ function embedSrc(url){
   return url;
 }
 
+// 임베드가 원천 불가한 링크(페이스북 릴스·공유·스토리 등) — 앱 내 재생 불가, 외부에서만.
+function nonEmbeddable(url){
+  try {
+    const u = new URL(url);
+    const h = u.hostname.replace(/^www\./, '');
+    const isFb = h.endsWith('facebook.com') || h === 'fb.watch' || h === 'fb.com';
+    if (isFb && /\/(reel|reels|share|stories|story)\b/i.test(u.pathname)) return 'facebook';
+    if (h.endsWith('instagram.com') || h.endsWith('tiktok.com')) return h.split('.').slice(-2,-1)[0];
+    return '';
+  } catch { return ''; }
+}
+
 // ── 앱 내 뷰어 (뒤로가기로 닫힘) ──────────────────
 function openViewer(url){
   if (!url) return;
   const frame = document.getElementById('viewerFrame');
-  frame.src = embedSrc(url);
+  const fb = document.getElementById('viewerFallback');
+  const svc = nonEmbeddable(url);
+  if (svc) {
+    // 임베드 불가 — 빈 화면 대신 안내 + 큰 열기 버튼
+    frame.src = 'about:blank'; frame.classList.add('hidden');
+    const name = svc === 'facebook' ? '페이스북' : svc === 'instagram' ? '인스타그램' : svc === 'tiktok' ? '틱톡' : '원본 서비스';
+    document.getElementById('viewerFallbackMsg').innerHTML =
+      `이 영상은 ${name} 정책상 앱 안에서 재생할 수 없어요.<br/>아래 버튼으로 ${name}에서 열면 재생됩니다.`;
+    document.getElementById('viewerFallbackOpen').href = url;
+    fb.classList.remove('hidden');
+  } else {
+    fb.classList.add('hidden'); frame.classList.remove('hidden');
+    frame.src = embedSrc(url);
+  }
   document.getElementById('viewerOpen').href = url;
   document.getElementById('viewerHost').textContent = domainOf(url);
   document.getElementById('viewer').classList.remove('hidden');
@@ -222,7 +247,10 @@ function closeViewer(){
   const v = document.getElementById('viewer');
   if (!v || v.classList.contains('hidden')) return;
   v.classList.add('hidden');
-  document.getElementById('viewerFrame').src = 'about:blank';   // 재생 정지
+  const frame = document.getElementById('viewerFrame');
+  frame.src = 'about:blank';   // 재생 정지
+  frame.classList.remove('hidden');
+  document.getElementById('viewerFallback').classList.add('hidden');
   document.body.classList.remove('viewer-open');
 }
 function dismissViewer(){
