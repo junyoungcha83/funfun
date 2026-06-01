@@ -189,14 +189,28 @@ function render(){
   });
 }
 
+// 임베드 가능한 iframe src 로 변환 (YouTube·Facebook 등은 전용 임베드 사용)
+function embedSrc(url){
+  const vid = ytId(url);
+  if (vid) return `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`;
+  try {
+    const h = new URL(url).hostname.replace(/^www\./, '');
+    const isFb = h === 'facebook.com' || h.endsWith('.facebook.com') || h === 'fb.watch' || h === 'fb.com' || h === 'm.facebook.com';
+    if (isFb) {
+      // facebook 페이지는 직접 iframe 불가 → 공식 플러그인으로. 동영상/릴스는 video, 그 외 post.
+      const isVideo = h === 'fb.watch' || /\/(videos?|watch|reel|share\/v)\b/i.test(new URL(url).pathname) || /[?&]v=/.test(new URL(url).search);
+      const plugin = isVideo ? 'video' : 'post';
+      return `https://www.facebook.com/plugins/${plugin}.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=true`;
+    }
+  } catch {}
+  return url;
+}
+
 // ── 앱 내 뷰어 (뒤로가기로 닫힘) ──────────────────
 function openViewer(url){
   if (!url) return;
   const frame = document.getElementById('viewerFrame');
-  const vid = ytId(url);
-  frame.src = vid
-    ? `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`
-    : url;
+  frame.src = embedSrc(url);
   document.getElementById('viewerOpen').href = url;
   document.getElementById('viewerHost').textContent = domainOf(url);
   document.getElementById('viewer').classList.remove('hidden');
