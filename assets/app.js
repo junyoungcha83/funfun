@@ -179,6 +179,42 @@ function render(){
   box.querySelectorAll('.card-del').forEach(btn => {
     btn.onclick = () => deleteItem(btn.dataset.id);
   });
+  // 카드 탭 → 앱 내 뷰어로 열기(뒤로가기 시 앱 복귀). 데스크톱 새탭 단축키는 그대로 허용.
+  box.querySelectorAll('.card-link').forEach(a => {
+    a.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
+      e.preventDefault();
+      openViewer(a.getAttribute('href'));
+    });
+  });
+}
+
+// ── 앱 내 뷰어 (뒤로가기로 닫힘) ──────────────────
+function openViewer(url){
+  if (!url) return;
+  const frame = document.getElementById('viewerFrame');
+  const vid = ytId(url);
+  frame.src = vid
+    ? `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`
+    : url;
+  document.getElementById('viewerOpen').href = url;
+  document.getElementById('viewerHost').textContent = domainOf(url);
+  document.getElementById('viewer').classList.remove('hidden');
+  document.body.classList.add('viewer-open');
+  // 뒤로가기(폰/브라우저)로 뷰어가 닫히도록 히스토리 항목 push
+  if (!(history.state && history.state.funfunViewer)) history.pushState({ funfunViewer: 1 }, '');
+}
+function closeViewer(){
+  const v = document.getElementById('viewer');
+  if (!v || v.classList.contains('hidden')) return;
+  v.classList.add('hidden');
+  document.getElementById('viewerFrame').src = 'about:blank';   // 재생 정지
+  document.body.classList.remove('viewer-open');
+}
+function dismissViewer(){
+  // 닫기 버튼/ESC — pushState 한 항목을 되돌려(popstate) 닫음
+  if (history.state && history.state.funfunViewer) history.back();
+  else closeViewer();
 }
 
 function deleteItem(id){
@@ -300,8 +336,17 @@ async function saveAdd(){
     if (_previewTimer) clearTimeout(_previewTimer);
     _previewTimer = setTimeout(runPreview, 600);
   });
+  document.getElementById('viewerClose').onclick = dismissViewer;
+  // 폰/브라우저 뒤로가기 → 뷰어 열려있으면 닫고 앱 목록 유지
+  window.addEventListener('popstate', () => {
+    const v = document.getElementById('viewer');
+    if (v && !v.classList.contains('hidden')) closeViewer();
+  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { const d = document.getElementById('addDialog'); if (d.open) d.close(); }
+    if (e.key !== 'Escape') return;
+    const v = document.getElementById('viewer');
+    if (v && !v.classList.contains('hidden')) { dismissViewer(); return; }
+    const d = document.getElementById('addDialog'); if (d.open) d.close();
   });
 
   // 다시 보일 때 서버 최신 반영 (저장 펜딩 없을 때만)
