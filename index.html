@@ -44,12 +44,15 @@
 <dialog id="moveDialog" class="dialog sheet">
   <div class="sheet-body">
     <div class="move-title" id="moveTitle"></div>
-    <div class="seg-group" id="moveModes">
-      <button type="button" class="seg active" data-mode="move">이동</button>
-      <button type="button" class="seg" data-mode="copy">복사</button>
+    <button type="button" class="btn link-copy" id="moveLinkCopy">📋 링크 주소 복사</button>
+    <div class="move-section">
+      <span class="move-label">다른 탭으로 이동</span>
+      <div class="move-cats" id="moveCatsMove"></div>
     </div>
-    <p class="sheet-hint">옮기거나 복사할 탭을 선택하세요</p>
-    <div class="move-cats" id="moveCats"></div>
+    <div class="move-section">
+      <span class="move-label">다른 탭으로 복사</span>
+      <div class="move-cats" id="moveCatsCopy"></div>
+    </div>
     <button type="button" class="btn ghost move-cancel" id="moveCancel">취소</button>
   </div>
 </dialog>

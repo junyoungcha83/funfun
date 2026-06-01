@@ -233,39 +233,64 @@ function attachLongPress(el, id){
   });
 }
 
-let moveItemId = null, moveMode = 'move';
+let moveItemId = null;
 function openMoveSheet(id){
   const it = state.items.find(x => x.id === id);
   if (!it) return;
-  moveItemId = id; moveMode = 'move';
+  moveItemId = id;
   document.getElementById('moveTitle').textContent = it.title || it.url;
-  updateMoveModeBtns();
+  const lc = document.getElementById('moveLinkCopy');
+  lc.textContent = '📋 링크 주소 복사'; lc.disabled = false;
   renderMoveCats();
   document.getElementById('moveDialog').showModal();
 }
-function updateMoveModeBtns(){
-  document.querySelectorAll('#moveModes .seg').forEach(b =>
-    b.classList.toggle('active', b.dataset.mode === moveMode));
+function catButtonsHtml(it, mode){
+  return CATS.map(c => {
+    const isCur = it.category === c.id;
+    const disabled = mode === 'move' && isCur;   // 같은 탭으로 이동은 막음(복사는 허용)
+    return `<button type="button" class="move-cat${isCur ? ' current' : ''}" data-cat="${c.id}"${disabled ? ' disabled' : ''}>${escapeHtml(c.label)}${isCur ? ' (현재)' : ''}</button>`;
+  }).join('');
 }
 function renderMoveCats(){
   const it = state.items.find(x => x.id === moveItemId);
-  const box = document.getElementById('moveCats');
-  box.innerHTML = CATS.map(c => {
-    const isCur = it && it.category === c.id;
-    const disabled = moveMode === 'move' && isCur;
-    return `<button type="button" class="move-cat${isCur ? ' current' : ''}" data-cat="${c.id}"${disabled ? ' disabled' : ''}>${escapeHtml(c.label)}${isCur ? ' (현재)' : ''}</button>`;
-  }).join('');
-  box.querySelectorAll('.move-cat').forEach(b => { b.onclick = () => applyMove(b.dataset.cat); });
+  if (!it) return;
+  const mv = document.getElementById('moveCatsMove');
+  const cp = document.getElementById('moveCatsCopy');
+  mv.innerHTML = catButtonsHtml(it, 'move');
+  cp.innerHTML = catButtonsHtml(it, 'copy');
+  mv.querySelectorAll('.move-cat').forEach(b => { b.onclick = () => doMove(b.dataset.cat); });
+  cp.querySelectorAll('.move-cat').forEach(b => { b.onclick = () => doCopy(b.dataset.cat); });
 }
-function applyMove(targetCat){
+function doMove(cat){
   const it = state.items.find(x => x.id === moveItemId);
   if (!it) return;
-  if (moveMode === 'move') { it.category = targetCat; }
-  else { state.items.push({ ...it, id: genId(), category: targetCat, added_at: nowIso() }); }
-  saveLocalAndSync();
-  activeCat = targetCat;            // 옮긴/복사한 탭으로 전환해 결과 확인
-  render();
+  it.category = cat;
+  saveLocalAndSync(); activeCat = cat; render();
   document.getElementById('moveDialog').close();
+}
+function doCopy(cat){
+  const it = state.items.find(x => x.id === moveItemId);
+  if (!it) return;
+  state.items.push({ ...it, id: genId(), category: cat, added_at: nowIso() });
+  saveLocalAndSync(); activeCat = cat; render();
+  document.getElementById('moveDialog').close();
+}
+async function copyLink(){
+  const it = state.items.find(x => x.id === moveItemId);
+  if (!it) return;
+  let ok = false;
+  try { await navigator.clipboard.writeText(it.url); ok = true; }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = it.url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove();
+    } catch {}
+  }
+  const lc = document.getElementById('moveLinkCopy');
+  lc.textContent = ok ? '복사됨 ✓' : '복사 실패';
+  lc.disabled = true;
+  setTimeout(() => document.getElementById('moveDialog').close(), 800);
 }
 
 // 임베드 가능한 iframe src 로 변환 (YouTube·Facebook 등은 전용 임베드 사용)
@@ -453,9 +478,7 @@ async function saveAdd(){
     b.onclick = () => { activeCat = b.dataset.cat; render(); };
   });
   document.getElementById('moveCancel').onclick = () => document.getElementById('moveDialog').close();
-  document.querySelectorAll('#moveModes .seg').forEach(b => {
-    b.onclick = () => { moveMode = b.dataset.mode; updateMoveModeBtns(); renderMoveCats(); };
-  });
+  document.getElementById('moveLinkCopy').onclick = copyLink;
   document.getElementById('addCancel').onclick = () => document.getElementById('addDialog').close();
   document.getElementById('addSave').onclick = saveAdd;
   document.getElementById('fUrl').addEventListener('input', () => {
