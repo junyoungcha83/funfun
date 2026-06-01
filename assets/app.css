@@ -78,11 +78,18 @@ body {
 .card-domain { font-size: .72rem; color: var(--muted); margin-top: auto; }
 .card-del {
   position: absolute; top: 6px; right: 6px;
-  width: 26px; height: 26px; border: none; border-radius: 50%;
-  background: rgba(0,0,0,.55); color: #fff; font-size: 1rem; line-height: 1; cursor: pointer;
+  width: 30px; height: 30px; border: none; border-radius: 50%;
+  background: var(--danger); color: #fff; font-size: 1.1rem; line-height: 1; cursor: pointer;
+  display: none;                      /* 평소 숨김 — 삭제 모드에서만 노출(실수 방지) */
+  align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
-body.read-only .card-del { display: none; }
-body.read-only .fab-add { display: none; }
+body.delete-mode:not(.read-only) .card-del { display: flex; }
+/* 삭제 모드일 때 카드에 살짝 표시 */
+body.delete-mode .card { outline: 2px dashed var(--danger); outline-offset: -2px; }
+body.read-only .fab-add,
+body.read-only #btnDeleteMode { display: none; }
+#btnDeleteMode.active { background: var(--danger); color: #fff; }
 
 /* FAB */
 .fab-add {

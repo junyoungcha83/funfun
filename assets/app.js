@@ -140,6 +140,23 @@ function updateEditUI(){
   document.body.classList.toggle('read-only', !editable);
   document.getElementById('btnEdit').textContent = editable ? '🔓' : '🔒';
   setSyncStatus(editable ? '' : 'readonly');
+  if (!editable) { deleteMode = false; document.body.classList.remove('delete-mode'); }
+  updateDeleteBtn();
+}
+
+// 삭제 모드 — 평소엔 카드 × 가 숨겨져 있고, 이 버튼을 켰을 때만 삭제 가능(실수 방지)
+let deleteMode = false;
+function toggleDeleteMode(){
+  if (!getEditToken()) return;
+  deleteMode = !deleteMode;
+  document.body.classList.toggle('delete-mode', deleteMode);
+  updateDeleteBtn();
+}
+function updateDeleteBtn(){
+  const b = document.getElementById('btnDeleteMode');
+  if (!b) return;
+  b.classList.toggle('active', deleteMode);
+  b.title = deleteMode ? '삭제 모드 끄기' : '삭제 모드';
 }
 
 // ── 렌더 ─────────────────────────────────────────
@@ -369,6 +386,7 @@ async function saveAdd(){
   render();
 
   document.getElementById('btnEdit').onclick = promptEditToken;
+  document.getElementById('btnDeleteMode').onclick = toggleDeleteMode;
   document.getElementById('btnAdd').onclick = openAddDialog;
   document.querySelectorAll('#tabs .tab').forEach(b => {
     b.onclick = () => { activeCat = b.dataset.cat; render(); };
