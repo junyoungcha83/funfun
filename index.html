@@ -40,6 +40,20 @@
 
 <button class="fab-add" id="btnAdd" type="button" aria-label="링크 등록">＋</button>
 
+<!-- 이동/복사 시트 (카드 길게 누르기) -->
+<dialog id="moveDialog" class="dialog sheet">
+  <div class="sheet-body">
+    <div class="move-title" id="moveTitle"></div>
+    <div class="seg-group" id="moveModes">
+      <button type="button" class="seg active" data-mode="move">이동</button>
+      <button type="button" class="seg" data-mode="copy">복사</button>
+    </div>
+    <p class="sheet-hint">옮기거나 복사할 탭을 선택하세요</p>
+    <div class="move-cats" id="moveCats"></div>
+    <button type="button" class="btn ghost move-cancel" id="moveCancel">취소</button>
+  </div>
+</dialog>
+
 <!-- 앱 내 뷰어 — 뒤로가기 시 닫혀 앱 목록으로 복귀 -->
 <div class="viewer hidden" id="viewer" role="dialog" aria-modal="true">
   <div class="viewer-bar">

@@ -197,14 +197,75 @@ function render(){
   box.querySelectorAll('.card-del').forEach(btn => {
     btn.onclick = () => deleteItem(btn.dataset.id);
   });
-  // 카드 탭 → 앱 내 뷰어로 열기(뒤로가기 시 앱 복귀). 데스크톱 새탭 단축키는 그대로 허용.
-  box.querySelectorAll('.card-link').forEach(a => {
-    a.addEventListener('click', (e) => {
+  // 카드: 탭 → 뷰어 / 길게 누르기 → 이동·복사 시트(편집 토큰 있을 때)
+  box.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id;
+    const a = card.querySelector('.card-link');
+    attachLongPress(card, id);
+    if (a) a.addEventListener('click', (e) => {
+      if (_lpFired) { e.preventDefault(); _lpFired = false; return; }   // 길게 누른 직후 클릭 무시
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
       e.preventDefault();
       openViewer(a.getAttribute('href'));
     });
   });
+}
+
+// ── 길게 누르기 → 이동/복사 ──────────────────────
+let _lpTimer = null, _lpFired = false, _lpStart = null;
+function attachLongPress(el, id){
+  const cancel = () => { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } };
+  el.addEventListener('touchstart', (e) => {
+    _lpFired = false;
+    const t = e.touches[0]; _lpStart = { x: t.clientX, y: t.clientY };
+    cancel();
+    _lpTimer = setTimeout(() => { if (getEditToken()) { _lpFired = true; openMoveSheet(id); } }, 480);
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (_lpStart && (Math.abs(t.clientX - _lpStart.x) > 10 || Math.abs(t.clientY - _lpStart.y) > 10)) cancel();
+  }, { passive: true });
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchcancel', cancel);
+  el.addEventListener('contextmenu', (e) => {   // 데스크톱 우클릭
+    e.preventDefault();
+    if (getEditToken()) { _lpFired = true; openMoveSheet(id); }
+  });
+}
+
+let moveItemId = null, moveMode = 'move';
+function openMoveSheet(id){
+  const it = state.items.find(x => x.id === id);
+  if (!it) return;
+  moveItemId = id; moveMode = 'move';
+  document.getElementById('moveTitle').textContent = it.title || it.url;
+  updateMoveModeBtns();
+  renderMoveCats();
+  document.getElementById('moveDialog').showModal();
+}
+function updateMoveModeBtns(){
+  document.querySelectorAll('#moveModes .seg').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === moveMode));
+}
+function renderMoveCats(){
+  const it = state.items.find(x => x.id === moveItemId);
+  const box = document.getElementById('moveCats');
+  box.innerHTML = CATS.map(c => {
+    const isCur = it && it.category === c.id;
+    const disabled = moveMode === 'move' && isCur;
+    return `<button type="button" class="move-cat${isCur ? ' current' : ''}" data-cat="${c.id}"${disabled ? ' disabled' : ''}>${escapeHtml(c.label)}${isCur ? ' (현재)' : ''}</button>`;
+  }).join('');
+  box.querySelectorAll('.move-cat').forEach(b => { b.onclick = () => applyMove(b.dataset.cat); });
+}
+function applyMove(targetCat){
+  const it = state.items.find(x => x.id === moveItemId);
+  if (!it) return;
+  if (moveMode === 'move') { it.category = targetCat; }
+  else { state.items.push({ ...it, id: genId(), category: targetCat, added_at: nowIso() }); }
+  saveLocalAndSync();
+  activeCat = targetCat;            // 옮긴/복사한 탭으로 전환해 결과 확인
+  render();
+  document.getElementById('moveDialog').close();
 }
 
 // 임베드 가능한 iframe src 로 변환 (YouTube·Facebook 등은 전용 임베드 사용)
@@ -390,6 +451,10 @@ async function saveAdd(){
   document.getElementById('btnAdd').onclick = openAddDialog;
   document.querySelectorAll('#tabs .tab').forEach(b => {
     b.onclick = () => { activeCat = b.dataset.cat; render(); };
+  });
+  document.getElementById('moveCancel').onclick = () => document.getElementById('moveDialog').close();
+  document.querySelectorAll('#moveModes .seg').forEach(b => {
+    b.onclick = () => { moveMode = b.dataset.mode; updateMoveModeBtns(); renderMoveCats(); };
   });
   document.getElementById('addCancel').onclick = () => document.getElementById('addDialog').close();
   document.getElementById('addSave').onclick = saveAdd;
