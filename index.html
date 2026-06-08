@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Fun fun</title>
-<link rel="stylesheet" href="assets/app.css" />
+<link rel="stylesheet" href="assets/app.css?v=14" />
 
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#7c3aed" />
@@ -32,6 +32,8 @@
   <button class="tab"        role="tab" data-cat="make"   aria-selected="false">만들기</button>
   <button class="tab"        role="tab" data-cat="cook"   aria-selected="false">요리</button>
   <button class="tab"        role="tab" data-cat="trivia" aria-selected="false">정보</button>
+  <button class="tab"        role="tab" data-cat="edu"    aria-selected="false">교육</button>
+  <button class="tab"        role="tab" data-cat="travel" aria-selected="false">여행</button>
 </nav>
 
 <main class="app-main">
@@ -108,7 +110,7 @@
   </form>
 </dialog>
 
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=14"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

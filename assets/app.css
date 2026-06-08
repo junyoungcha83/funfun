@@ -32,8 +32,8 @@ body {
 
 .tabs {
   position: sticky; top: 58px; z-index: 19;
-  display: flex; gap: 6px; padding: 10px 12px;
-  background: var(--bg); border-bottom: 1px solid var(--border); overflow-x: auto;
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px;
+  background: var(--bg); border-bottom: 1px solid var(--border);
 }
 .tab {
   flex: 1 0 auto; min-width: 64px;
