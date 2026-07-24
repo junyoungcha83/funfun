@@ -37,7 +37,7 @@ open http://localhost:8080/
 ## Worker 배포
 
 ```sh
-cd worker
+cd api
 npx wrangler kv namespace create FUNFUN     # 출력 id 를 wrangler.toml 에 기입
 echo "편집비밀번호" | npx wrangler secret put EDIT_TOKEN
 npx wrangler deploy
