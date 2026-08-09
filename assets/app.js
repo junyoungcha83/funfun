@@ -12,6 +12,7 @@ const CATS = [
   { id: 'trivia', label: '정보' },
   { id: 'edu',    label: '교육' },
   { id: 'travel', label: '여행' },
+  { id: 'ai',     label: 'AI' },
 ];
 const CAT_LABEL = Object.fromEntries(CATS.map(c => [c.id, c.label]));
 

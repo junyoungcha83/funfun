@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Fun fun</title>
-<link rel="stylesheet" href="assets/app.css?v=14" />
+<link rel="stylesheet" href="assets/app.css?v=15" />
 
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#7c3aed" />
@@ -34,6 +34,7 @@
   <button class="tab"        role="tab" data-cat="trivia" aria-selected="false">정보</button>
   <button class="tab"        role="tab" data-cat="edu"    aria-selected="false">교육</button>
   <button class="tab"        role="tab" data-cat="travel" aria-selected="false">여행</button>
+  <button class="tab"        role="tab" data-cat="ai"     aria-selected="false">AI</button>
 </nav>
 
 <main class="app-main">
@@ -94,6 +95,7 @@
         <option value="trivia">정보</option>
         <option value="edu">교육</option>
         <option value="travel">여행</option>
+        <option value="ai">AI</option>
       </select>
     </label>
     <label class="field">
@@ -112,7 +114,7 @@
   </form>
 </dialog>
 
-<script src="assets/app.js?v=14"></script>
+<script src="assets/app.js?v=15"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
