@@ -13,8 +13,11 @@ const CATS = [
   { id: 'edu',    label: '교육' },
   { id: 'travel', label: '여행' },
   { id: 'ai',     label: 'AI' },
+  { id: 'memo',   label: '나의메모', kind: 'note' },   // 링크가 아닌 제목/내용 텍스트 메모
 ];
 const CAT_LABEL = Object.fromEntries(CATS.map(c => [c.id, c.label]));
+const NOTE_CAT = 'memo';
+const LINK_CATS = CATS.filter(c => c.kind !== 'note');   // 이동/복사 대상은 링크 탭만
 
 let state = { version: 1, items: [] };
 let activeCat = 'money';
@@ -64,16 +67,30 @@ function setSyncStatus(s){
 }
 
 function migrate(loaded){
-  const items = (loaded && Array.isArray(loaded.items) ? loaded.items : []).map(it => ({
-    id: it.id || genId(),
-    category: CAT_LABEL[it.category] ? it.category : 'trivia',
-    url: String(it.url || ''),
-    title: String(it.title || ''),
-    image: String(it.image || ''),
-    domain: String(it.domain || domainOf(it.url || '')),
-    note: String(it.note || ''),
-    added_at: it.added_at || nowIso(),
-  })).filter(it => it.url);
+  const items = (loaded && Array.isArray(loaded.items) ? loaded.items : []).map(it => {
+    // 텍스트 메모 — URL 없이 제목/내용만 가짐
+    if (it.type === 'note' || it.category === NOTE_CAT) {
+      return {
+        id: it.id || genId(),
+        type: 'note',
+        category: NOTE_CAT,
+        title: String(it.title || ''),
+        body: String(it.body || ''),
+        added_at: it.added_at || nowIso(),
+        updated_at: it.updated_at || it.added_at || nowIso(),
+      };
+    }
+    return {
+      id: it.id || genId(),
+      category: CAT_LABEL[it.category] ? it.category : 'trivia',
+      url: String(it.url || ''),
+      title: String(it.title || ''),
+      image: String(it.image || ''),
+      domain: String(it.domain || domainOf(it.url || '')),
+      note: String(it.note || ''),
+      added_at: it.added_at || nowIso(),
+    };
+  }).filter(it => (it.type === 'note' ? (it.title || it.body) : it.url));
   return { version: 1, items };
 }
 
@@ -170,14 +187,25 @@ function render(){
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
   const box = document.getElementById('cards');
+  const isNoteTab = activeCat === NOTE_CAT;
+  box.classList.toggle('notes', isNoteTab);
+  document.getElementById('btnAdd').setAttribute('aria-label', isNoteTab ? '메모 등록' : '링크 등록');
+
   const items = state.items
     .filter(it => it.category === activeCat)
-    .sort((a, b) => String(b.added_at).localeCompare(String(a.added_at)));
+    .sort((a, b) => String(b.updated_at || b.added_at).localeCompare(String(a.updated_at || a.added_at)));
 
   if (!items.length) {
-    box.innerHTML = `<div class="empty">아직 등록된 링크가 없어요.${getEditToken() ? '<br/><small>아래 ＋ 로 URL을 등록하세요.</small>' : '<br/><small>🔒 로 편집 비밀번호를 입력하면 등록할 수 있어요.</small>'}</div>`;
+    const what = isNoteTab ? '메모' : '링크';
+    const hint = getEditToken()
+      ? `<br/><small>아래 ＋ 로 ${isNoteTab ? '메모를' : 'URL을'} 등록하세요.</small>`
+      : '<br/><small>🔒 로 편집 비밀번호를 입력하면 등록할 수 있어요.</small>';
+    box.innerHTML = `<div class="empty">아직 등록된 ${what}가 없어요.${hint}</div>`;
     return;
   }
+
+  if (isNoteTab) { renderNotes(box, items); return; }
+
   box.innerHTML = items.map(it => {
     const img = it.image
       ? `<img class="thumb" src="${escapeAttr(it.image)}" alt="" loading="lazy"
@@ -214,6 +242,78 @@ function render(){
   });
 }
 
+// ── 나의메모 (텍스트) ────────────────────────────
+function fmtDate(iso){
+  try {
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  } catch { return ''; }
+}
+
+function renderNotes(box, items){
+  box.innerHTML = items.map(it => `
+    <article class="card note-card" data-id="${escapeAttr(it.id)}">
+      <button class="note-open" type="button" data-id="${escapeAttr(it.id)}">
+        <div class="note-title">${escapeHtml(it.title || '(제목 없음)')}</div>
+        <div class="note-body">${escapeHtml(it.body || '')}</div>
+        <div class="note-date">${escapeHtml(fmtDate(it.updated_at || it.added_at))}</div>
+      </button>
+      <button class="card-del" type="button" data-id="${escapeAttr(it.id)}" aria-label="삭제">×</button>
+    </article>`).join('');
+
+  box.querySelectorAll('.card-del').forEach(btn => { btn.onclick = () => deleteItem(btn.dataset.id); });
+  box.querySelectorAll('.note-open').forEach(btn => { btn.onclick = () => openMemoView(btn.dataset.id); });
+}
+
+let memoEditId = null;   // null = 새 메모
+function openMemoDialog(id){
+  if (!getEditToken()) {
+    if (confirm('편집 비밀번호가 필요합니다. 지금 입력할까요?')) promptEditToken();
+    if (!getEditToken()) return;
+  }
+  const it = id ? state.items.find(x => x.id === id) : null;
+  memoEditId = it ? it.id : null;
+  document.getElementById('memoTitle').textContent = it ? '메모 수정' : '메모 등록';
+  document.getElementById('mTitle').value = it ? (it.title || '') : '';
+  document.getElementById('mBody').value  = it ? (it.body  || '') : '';
+  document.getElementById('memoStatus').textContent = '';
+  document.getElementById('memoDialog').showModal();
+  setTimeout(() => document.getElementById('mTitle').focus(), 50);
+}
+
+function saveMemo(){
+  const title = document.getElementById('mTitle').value.trim().slice(0, 120);
+  const body  = document.getElementById('mBody').value.trim();
+  if (!title && !body) { document.getElementById('memoStatus').textContent = '제목이나 내용을 입력하세요.'; return; }
+
+  if (memoEditId) {
+    const it = state.items.find(x => x.id === memoEditId);
+    if (it) { it.title = title; it.body = body; it.updated_at = nowIso(); }
+  } else {
+    state.items.push({
+      id: genId(), type: 'note', category: NOTE_CAT,
+      title, body, added_at: nowIso(), updated_at: nowIso(),
+    });
+  }
+  memoEditId = null;
+  saveLocalAndSync();
+  activeCat = NOTE_CAT;
+  render();
+  document.getElementById('memoDialog').close();
+}
+
+let memoViewId = null;
+function openMemoView(id){
+  const it = state.items.find(x => x.id === id);
+  if (!it) return;
+  memoViewId = id;
+  document.getElementById('memoViewTitle').textContent = it.title || '(제목 없음)';
+  document.getElementById('memoViewDate').textContent = fmtDate(it.updated_at || it.added_at);
+  document.getElementById('memoViewBody').textContent = it.body || '';
+  document.getElementById('memoViewEdit').style.display = getEditToken() ? '' : 'none';
+  document.getElementById('memoViewDialog').showModal();
+}
+
 // ── 길게 누르기 → 이동/복사 ──────────────────────
 let _lpTimer = null, _lpFired = false, _lpStart = null;
 function attachLongPress(el, id){
@@ -248,7 +348,7 @@ function openMoveSheet(id){
   document.getElementById('moveDialog').showModal();
 }
 function catButtonsHtml(it, mode){
-  return CATS.map(c => {
+  return LINK_CATS.map(c => {
     const isCur = it.category === c.id;
     const disabled = mode === 'move' && isCur;   // 같은 탭으로 이동은 막음(복사는 허용)
     return `<button type="button" class="move-cat${isCur ? ' current' : ''}" data-cat="${c.id}"${disabled ? ' disabled' : ''}>${escapeHtml(c.label)}${isCur ? ' (현재)' : ''}</button>`;
@@ -370,7 +470,7 @@ function deleteItem(id){
   if (!getEditToken()) return;
   const it = state.items.find(x => x.id === id);
   if (!it) return;
-  if (!confirm('이 링크를 삭제할까요?')) return;
+  if (!confirm(it.type === 'note' ? '이 메모를 삭제할까요?' : '이 링크를 삭제할까요?')) return;
   state.items = state.items.filter(x => x.id !== id);
   saveLocalAndSync();
   render();
@@ -385,7 +485,7 @@ function openAddDialog(){
   lastPreview = null;
   document.getElementById('fUrl').value = '';
   document.getElementById('fNote').value = '';
-  document.getElementById('fCategory').value = activeCat;
+  document.getElementById('fCategory').value = (activeCat === NOTE_CAT) ? 'trivia' : activeCat;
   const pv = document.getElementById('preview');
   pv.className = 'preview hidden'; pv.innerHTML = '';
   document.getElementById('addStatus').textContent = '';
@@ -476,7 +576,8 @@ async function saveAdd(){
 
   document.getElementById('btnEdit').onclick = promptEditToken;
   document.getElementById('btnDeleteMode').onclick = toggleDeleteMode;
-  document.getElementById('btnAdd').onclick = openAddDialog;
+  document.getElementById('btnAdd').onclick = () =>
+    (activeCat === NOTE_CAT ? openMemoDialog(null) : openAddDialog());
   document.querySelectorAll('#tabs .tab').forEach(b => {
     b.onclick = () => { activeCat = b.dataset.cat; render(); };
   });
@@ -484,6 +585,13 @@ async function saveAdd(){
   document.getElementById('moveLinkCopy').onclick = copyLink;
   document.getElementById('addCancel').onclick = () => document.getElementById('addDialog').close();
   document.getElementById('addSave').onclick = saveAdd;
+  document.getElementById('memoCancel').onclick = () => document.getElementById('memoDialog').close();
+  document.getElementById('memoSave').onclick = saveMemo;
+  document.getElementById('memoViewClose').onclick = () => document.getElementById('memoViewDialog').close();
+  document.getElementById('memoViewEdit').onclick = () => {
+    document.getElementById('memoViewDialog').close();
+    openMemoDialog(memoViewId);
+  };
   document.getElementById('fUrl').addEventListener('input', () => {
     if (_previewTimer) clearTimeout(_previewTimer);
     _previewTimer = setTimeout(runPreview, 600);
@@ -498,7 +606,10 @@ async function saveAdd(){
     if (e.key !== 'Escape') return;
     const v = document.getElementById('viewer');
     if (v && !v.classList.contains('hidden')) { dismissViewer(); return; }
-    const d = document.getElementById('addDialog'); if (d.open) d.close();
+    for (const id of ['memoViewDialog', 'memoDialog', 'addDialog']) {
+      const d = document.getElementById(id);
+      if (d && d.open) { d.close(); return; }
+    }
   });
 
   // 다시 보일 때 서버 최신 반영 (저장 펜딩 없을 때만)

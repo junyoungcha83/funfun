@@ -109,11 +109,12 @@ body.read-only #btnDeleteMode { display: none; }
 .dialog h2 { margin: 0 0 14px; font-size: 1.1rem; }
 .field { display: block; margin-bottom: 12px; }
 .field > span { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 4px; }
-.field input, .field select {
+.field input, .field select, .field textarea {
   width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
   font-size: 1rem; background: #fff; color: var(--text);
 }
-.field input:focus, .field select:focus { outline: 2px solid var(--primary-bg); border-color: var(--primary); }
+.field textarea { font-family: inherit; line-height: 1.5; resize: vertical; min-height: 120px; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--primary-bg); border-color: var(--primary); }
 
 .preview {
   display: flex; gap: 10px; align-items: center; margin: 6px 0 12px;
@@ -150,6 +151,33 @@ body.read-only #btnDeleteMode { display: none; }
 .move-cat.current { color: var(--muted); }
 .move-cat:disabled { opacity: .45; cursor: default; }
 .move-cancel { width: 100%; }
+
+/* 나의메모 — 텍스트 카드는 1열 목록으로 */
+.cards.notes { grid-template-columns: 1fr; }
+@media (min-width: 560px) { .cards.notes { grid-template-columns: 1fr; } }
+.note-open {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: none; border: none; font: inherit; color: inherit;
+  padding: 12px 14px;
+}
+.note-title {
+  font-weight: 700; font-size: .95rem; line-height: 1.35; margin-bottom: 4px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-body {
+  font-size: .82rem; color: #4b5563; white-space: pre-wrap; word-break: break-word;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-date { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+
+/* 메모 읽기 모달 */
+.memo-view { padding: 18px; }
+.memo-view h2 { margin: 0 0 4px; font-size: 1.1rem; line-height: 1.35; word-break: break-word; }
+.memo-view-date { font-size: .74rem; color: var(--muted); margin-bottom: 12px; }
+.memo-view-body {
+  white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.6;
+  max-height: 55vh; overflow-y: auto; margin-bottom: 16px;
+}
 
 /* iOS 길게 누르기 시 이미지 저장/선택 메뉴 방지 */
 .card, .card img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }

@@ -22,10 +22,22 @@ URL을 등록해 **만들기 / 요리 / 상식 / 기타** 4개 탭으로 모아�
 ```json
 { "version": 1, "items": [
   { "id": "f_..", "category": "make|cook|trivia|etc", "url": "https://...",
-    "title": "...", "image": "...", "domain": "youtube.com", "note": "", "added_at": "ISO" }
+    "title": "...", "image": "...", "domain": "youtube.com", "note": "", "added_at": "ISO" },
+  { "id": "f_..", "type": "note", "category": "memo",
+    "title": "제목", "body": "내용", "added_at": "ISO", "updated_at": "ISO" }
 ] }
 ```
 카테고리: 만들기=make · 요리=cook · 상식=trivia · 기타=etc.
+
+## 나의메모 (memo 탭)
+
+URL 없이 **제목 / 내용**만 입력하는 텍스트 메모. 같은 `items` 배열에 `type:"note"` 로 저장되어
+링크와 함께 서버 동기화된다(Worker 변경 불필요).
+
+- 메모 탭에서 ＋ → 제목·내용 입력 → 저장
+- 카드 탭 → 전문 보기, 보기 화면의 **수정** 으로 편집
+- 삭제는 기존과 동일하게 🗑 삭제 모드 → 카드 ×
+- 링크의 이동/복사 시트에는 메모 탭이 나오지 않음(타입이 달라 섞이지 않게)
 
 ## 로컬 실행
 

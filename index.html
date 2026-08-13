@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Fun fun</title>
-<link rel="stylesheet" href="assets/app.css?v=15" />
+<link rel="stylesheet" href="assets/app.css?v=17" />
 
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#7c3aed" />
@@ -35,6 +35,7 @@
   <button class="tab"        role="tab" data-cat="edu"    aria-selected="false">교육</button>
   <button class="tab"        role="tab" data-cat="travel" aria-selected="false">여행</button>
   <button class="tab"        role="tab" data-cat="ai"     aria-selected="false">AI</button>
+  <button class="tab"        role="tab" data-cat="memo"   aria-selected="false">나의메모</button>
 </nav>
 
 <main class="app-main">
@@ -114,7 +115,40 @@
   </form>
 </dialog>
 
-<script src="assets/app.js?v=15"></script>
+<!-- 메모 작성/수정 모달 (나의메모 탭) -->
+<dialog id="memoDialog" class="dialog">
+  <form id="memoForm" method="dialog">
+    <h2 id="memoTitle">메모 등록</h2>
+    <label class="field">
+      <span>제목</span>
+      <input type="text" id="mTitle" autocomplete="off" placeholder="제목" maxlength="120" required />
+    </label>
+    <label class="field">
+      <span>내용</span>
+      <textarea id="mBody" rows="8" placeholder="내용을 입력하세요"></textarea>
+    </label>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="memoCancel">취소</button>
+      <button type="button" class="btn" id="memoSave">저장</button>
+    </div>
+    <div class="add-status" id="memoStatus"></div>
+  </form>
+</dialog>
+
+<!-- 메모 읽기 (카드 탭) -->
+<dialog id="memoViewDialog" class="dialog">
+  <div class="memo-view">
+    <h2 id="memoViewTitle"></h2>
+    <div class="memo-view-date" id="memoViewDate"></div>
+    <div class="memo-view-body" id="memoViewBody"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="memoViewClose">닫기</button>
+      <button type="button" class="btn" id="memoViewEdit">수정</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="assets/app.js?v=17"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
