@@ -657,12 +657,19 @@ function countIn(catId){ return state.items.filter(it => it.category === catId).
 function renderCatList(){
   const box = document.getElementById('catList');
   if (!box) return;
-  box.innerHTML = cats().map(c => {
+  const list = cats();
+  box.innerHTML = list.map((c, i) => {
     const n = countIn(c.id);
     const isNote = c.kind === 'note';
     // 안에 든 게 있으면 못 지운다 — 지우는 순간 그 항목들이 갈 곳이 없어진다
     const why = isNote ? '메모 탭은 지울 수 없어요' : n ? `${n}개가 들어 있어 못 지워요` : '';
     return `<li class="cat-row">
+      <span class="cat-move">
+        <button type="button" class="cat-arrow" data-up="${escapeAttr(c.id)}"
+          ${i === 0 ? 'disabled' : ''} title="위로" aria-label="${escapeAttr(c.label)} 위로">▲</button>
+        <button type="button" class="cat-arrow" data-down="${escapeAttr(c.id)}"
+          ${i === list.length - 1 ? 'disabled' : ''} title="아래로" aria-label="${escapeAttr(c.label)} 아래로">▼</button>
+      </span>
       <span class="cat-name">${escapeHtml(c.label)}</span>
       <span class="cat-count">${isNote ? '메모' : `${n}개`}</span>
       <button type="button" class="cat-btn" data-ren="${escapeAttr(c.id)}">이름</button>
@@ -672,6 +679,8 @@ function renderCatList(){
   }).join('');
   box.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => renameCat(b.dataset.ren));
   box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteCat(b.dataset.del));
+  box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => moveCat(b.dataset.up, -1));
+  box.querySelectorAll('[data-down]').forEach(b => b.onclick = () => moveCat(b.dataset.down, 1));
 }
 
 function openCatDialog(){
@@ -688,6 +697,17 @@ function addCat(){
   state.cats.push({ id: genCatId(), label });
   saveLocalAndSync();
   input.value = '';
+  renderCatList(); render();
+}
+
+// 목록 순서 바꾸기 — 이웃과 자리만 맞바꾼다. 탭 순서가 곧 이 순서다.
+function moveCat(id, dir){
+  const i = state.cats.findIndex(c => c.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= state.cats.length) return;
+  const a = state.cats;
+  [a[i], a[j]] = [a[j], a[i]];
+  saveLocalAndSync();
   renderCatList(); render();
 }
 

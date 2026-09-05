@@ -52,8 +52,15 @@ body {
   border-radius: 10px; padding: 10px 12px; font-size: 1rem; }
 .cat-list { list-style: none; margin: 0 0 10px; padding: 0;
   max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-.cat-row { display: flex; align-items: center; gap: 8px;
-  border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.cat-row { display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 6px 8px; }
+/* 순서 바꾸기 — 좁은 폰에서도 들어가게 화살표를 위아래로 붙여 한 칸에 넣는다 */
+.cat-move { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; }
+.cat-arrow { border: 1px solid var(--border); background: #fff; color: var(--text);
+  border-radius: 5px; width: 26px; height: 17px; padding: 0; cursor: pointer;
+  font-size: .58rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.cat-arrow:disabled { opacity: .28; cursor: not-allowed; }
+.cat-arrow:active:not(:disabled) { background: var(--bg); }
 .cat-name { flex: 1 1 auto; min-width: 0; font-weight: 600;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-count { flex: 0 0 auto; font-size: .76rem; color: var(--muted); }
