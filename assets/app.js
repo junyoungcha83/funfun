@@ -4,7 +4,9 @@ const STORAGE_KEY = 'funfun-state-v1';
 const TOKEN_KEY   = 'funfun-edit-token';
 const SAVE_DEBOUNCE_MS = 800;
 
-const CATS = [
+// 목록(탭)은 이제 데이터에 들어 있어 앱에서 직접 만들고 지울 수 있다.
+// 아래는 처음 쓰는 사람에게 깔리는 기본값일 뿐이다.
+const DEFAULT_CATS = [
   { id: 'money',  label: '경제' },
   { id: 'estate', label: '부동산' },
   { id: 'make',   label: '만들기' },
@@ -15,12 +17,18 @@ const CATS = [
   { id: 'ai',     label: 'AI' },
   { id: 'memo',   label: '나의메모', kind: 'note' },   // 링크가 아닌 제목/내용 텍스트 메모
 ];
-const CAT_LABEL = Object.fromEntries(CATS.map(c => [c.id, c.label]));
 const NOTE_CAT = 'memo';
-const LINK_CATS = CATS.filter(c => c.kind !== 'note');   // 이동/복사 대상은 링크 탭만
 
-let state = { version: 1, items: [] };
-let activeCat = 'money';
+let state = { version: 1, cats: DEFAULT_CATS.map(c => ({ ...c })), items: [] };
+
+const cats = () => state.cats;
+const catById = id => state.cats.find(c => c.id === id);
+const catLabel = id => { const c = catById(id); return c ? c.label : ''; };
+const linkCats = () => state.cats.filter(c => c.kind !== 'note');   // 이동/복사 대상은 링크 탭만
+const firstCatId = () => (state.cats[0] || {}).id || NOTE_CAT;
+// 링크를 담을 수 있는 첫 목록 — 등록 폼의 기본 선택
+const fallbackLinkCat = () => (linkCats()[0] || {}).id || '';
+let activeCat = '';        // 첫 렌더에서 첫 목록으로 정해진다
 let lastPreview = null;     // { url, meta }
 let _saveTimer = null, _saveCtrl = null, _previewTimer = null;
 
@@ -66,7 +74,29 @@ function setSyncStatus(s){
   el.className = 'sync-status ' + (s || '');
 }
 
+// 저장된 목록을 정리한다. 예전 데이터에는 cats 가 없으므로 기본값을 깔고,
+// 메모 탭은 성격이 달라 없으면 되살린다(지워지면 메모를 볼 길이 없어진다).
+function migrateCats(loaded){
+  const raw = (loaded && Array.isArray(loaded.cats)) ? loaded.cats : DEFAULT_CATS;
+  const seen = new Set(), out = [];
+  for (const c of raw) {
+    const id = String((c && c.id) || '').trim();
+    const label = String((c && c.label) || '').trim();
+    if (!id || !label || seen.has(id)) continue;
+    seen.add(id);
+    const o = { id, label };
+    if (c.kind === 'note' || id === NOTE_CAT) o.kind = 'note';
+    out.push(o);
+  }
+  if (!out.length) return DEFAULT_CATS.map(c => ({ ...c }));
+  if (!out.some(c => c.id === NOTE_CAT)) out.push({ id: NOTE_CAT, label: '나의메모', kind: 'note' });
+  return out;
+}
+
 function migrate(loaded){
+  const cats = migrateCats(loaded);
+  const known = new Set(cats.map(c => c.id));
+  const linkFallback = (cats.find(c => c.kind !== 'note') || cats[0]).id;
   const items = (loaded && Array.isArray(loaded.items) ? loaded.items : []).map(it => {
     // 텍스트 메모 — URL 없이 제목/내용만 가짐
     if (it.type === 'note' || it.category === NOTE_CAT) {
@@ -82,7 +112,8 @@ function migrate(loaded){
     }
     return {
       id: it.id || genId(),
-      category: CAT_LABEL[it.category] ? it.category : 'trivia',
+      // 목록이 지워졌으면 링크가 사라지지 않게 첫 링크 목록으로 옮긴다
+      category: known.has(it.category) ? it.category : linkFallback,
       url: String(it.url || ''),
       title: String(it.title || ''),
       image: String(it.image || ''),
@@ -91,7 +122,7 @@ function migrate(loaded){
       added_at: it.added_at || nowIso(),
     };
   }).filter(it => (it.type === 'note' ? (it.title || it.body) : it.url));
-  return { version: 1, items };
+  return { version: 1, cats, items };
 }
 
 function cacheLocal(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
@@ -110,7 +141,7 @@ async function loadInitial(){
   const remote = await fetchFromServer();
   if (remote) return migrate(remote);
   try { const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (local) return migrate(local); } catch {}
-  return { version: 1, items: [] };
+  return migrate(null);      // 처음이면 기본 목록이 깔린다
 }
 
 function saveLocalAndSync(){
@@ -162,6 +193,7 @@ function updateEditUI(){
   setSyncStatus(editable ? '' : 'readonly');
   if (!editable) { deleteMode = false; document.body.classList.remove('delete-mode'); }
   updateDeleteBtn();
+  renderTabs();        // ＋(목록 관리) 는 편집 중일 때만 보인다
 }
 
 // 삭제 모드 — 평소엔 카드 × 가 숨겨져 있고, 이 버튼을 켰을 때만 삭제 가능(실수 방지)
@@ -179,13 +211,39 @@ function updateDeleteBtn(){
   b.title = deleteMode ? '삭제 모드 끄기' : '삭제 모드';
 }
 
+// ── 목록(탭) ─────────────────────────────────────
+// 탭은 데이터에서 그린다. 편집 비밀번호가 들어가 있을 때만 끝에 ＋ 가 붙는다.
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  if (!nav) return;
+  if (!catById(activeCat)) activeCat = firstCatId();     // 보던 목록이 지워졌을 때
+  const tabs = cats().map(c => {
+    const on = c.id === activeCat;
+    return `<button class="tab${on ? ' active' : ''}" role="tab" data-cat="${escapeAttr(c.id)}"
+             aria-selected="${on ? 'true' : 'false'}">${escapeHtml(c.label)}</button>`;
+  }).join('');
+  const manage = getEditToken()
+    ? `<button class="tab tab-manage" id="tabManage" type="button" title="목록 만들기·이름변경·삭제"
+        aria-label="목록 관리">＋</button>` : '';
+  nav.innerHTML = tabs + manage;
+  nav.querySelectorAll('.tab[data-cat]').forEach(b => {
+    b.onclick = () => { activeCat = b.dataset.cat; render(); };
+  });
+  const m = document.getElementById('tabManage');
+  if (m) m.onclick = openCatDialog;
+}
+
+// 등록 폼의 분류 선택 — 링크 목록만 넣는다(메모 탭은 성격이 다르다)
+function fillCategorySelect(){
+  const sel = document.getElementById('fCategory');
+  if (!sel) return;
+  sel.innerHTML = linkCats()
+    .map(c => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.label)}</option>`).join('');
+}
+
 // ── 렌더 ─────────────────────────────────────────
 function render(){
-  document.querySelectorAll('#tabs .tab').forEach(b => {
-    const on = b.dataset.cat === activeCat;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-selected', on ? 'true' : 'false');
-  });
+  renderTabs();
   const box = document.getElementById('cards');
   const isNoteTab = activeCat === NOTE_CAT;
   box.classList.toggle('notes', isNoteTab);
@@ -348,7 +406,7 @@ function openMoveSheet(id){
   document.getElementById('moveDialog').showModal();
 }
 function catButtonsHtml(it, mode){
-  return LINK_CATS.map(c => {
+  return linkCats().map(c => {
     const isCur = it.category === c.id;
     const disabled = mode === 'move' && isCur;   // 같은 탭으로 이동은 막음(복사는 허용)
     return `<button type="button" class="move-cat${isCur ? ' current' : ''}" data-cat="${c.id}"${disabled ? ' disabled' : ''}>${escapeHtml(c.label)}${isCur ? ' (현재)' : ''}</button>`;
@@ -485,7 +543,10 @@ function openAddDialog(){
   lastPreview = null;
   document.getElementById('fUrl').value = '';
   document.getElementById('fNote').value = '';
-  document.getElementById('fCategory').value = (activeCat === NOTE_CAT) ? 'trivia' : activeCat;
+  fillCategorySelect();          // 목록이 바뀌었을 수 있으니 열 때마다 다시 채운다
+  const sel = document.getElementById('fCategory');
+  sel.value = (activeCat === NOTE_CAT) ? fallbackLinkCat() : activeCat;
+  if (!sel.value) sel.value = fallbackLinkCat();
   const pv = document.getElementById('preview');
   pv.className = 'preview hidden'; pv.innerHTML = '';
   document.getElementById('addStatus').textContent = '';
@@ -567,6 +628,71 @@ async function saveAdd(){
   document.getElementById('addDialog').close();
 }
 
+// ── 목록 관리 ────────────────────────────────────
+// id 는 사람이 볼 일이 없으므로 겹치지 않기만 하면 된다.
+function genCatId(){ return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function countIn(catId){ return state.items.filter(it => it.category === catId).length; }
+
+function renderCatList(){
+  const box = document.getElementById('catList');
+  if (!box) return;
+  box.innerHTML = cats().map(c => {
+    const n = countIn(c.id);
+    const isNote = c.kind === 'note';
+    // 안에 든 게 있으면 못 지운다 — 지우는 순간 그 항목들이 갈 곳이 없어진다
+    const why = isNote ? '메모 탭은 지울 수 없어요' : n ? `${n}개가 들어 있어 못 지워요` : '';
+    return `<li class="cat-row">
+      <span class="cat-name">${escapeHtml(c.label)}</span>
+      <span class="cat-count">${isNote ? '메모' : `${n}개`}</span>
+      <button type="button" class="cat-btn" data-ren="${escapeAttr(c.id)}">이름</button>
+      <button type="button" class="cat-btn danger" data-del="${escapeAttr(c.id)}"
+        ${why ? `disabled title="${escapeAttr(why)}"` : ''}>삭제</button>
+    </li>`;
+  }).join('');
+  box.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => renameCat(b.dataset.ren));
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteCat(b.dataset.del));
+}
+
+function openCatDialog(){
+  document.getElementById('catNew').value = '';
+  renderCatList();
+  document.getElementById('catDialog').showModal();
+}
+
+function addCat(){
+  const input = document.getElementById('catNew');
+  const label = input.value.trim();
+  if (!label) { input.focus(); return; }
+  if (cats().some(c => c.label === label)) { alert('같은 이름의 목록이 이미 있어요.'); input.focus(); return; }
+  state.cats.push({ id: genCatId(), label });
+  saveLocalAndSync();
+  input.value = '';
+  renderCatList(); render();
+}
+
+function renameCat(id){
+  const c = catById(id); if (!c) return;
+  const v = prompt('목록 이름', c.label);
+  if (v === null) return;
+  const label = v.trim();
+  if (!label) return;
+  if (cats().some(x => x.id !== id && x.label === label)) { alert('같은 이름의 목록이 이미 있어요.'); return; }
+  c.label = label;
+  saveLocalAndSync();
+  renderCatList(); render();
+}
+
+function deleteCat(id){
+  const c = catById(id); if (!c || c.kind === 'note') return;
+  if (countIn(id)) { alert('안에 든 항목을 먼저 옮기거나 지워 주세요.'); return; }
+  if (!confirm(`'${c.label}' 목록을 지울까요?`)) return;
+  state.cats = state.cats.filter(x => x.id !== id);
+  if (activeCat === id) activeCat = firstCatId();
+  saveLocalAndSync();
+  renderCatList(); render();
+}
+
 // ── 부팅 ─────────────────────────────────────────
 (async function init(){
   updateEditUI();
@@ -578,8 +704,10 @@ async function saveAdd(){
   document.getElementById('btnDeleteMode').onclick = toggleDeleteMode;
   document.getElementById('btnAdd').onclick = () =>
     (activeCat === NOTE_CAT ? openMemoDialog(null) : openAddDialog());
-  document.querySelectorAll('#tabs .tab').forEach(b => {
-    b.onclick = () => { activeCat = b.dataset.cat; render(); };
+  document.getElementById('catAdd').onclick = addCat;
+  document.getElementById('catClose').onclick = () => document.getElementById('catDialog').close();
+  document.getElementById('catNew').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addCat(); }
   });
   document.getElementById('moveCancel').onclick = () => document.getElementById('moveDialog').close();
   document.getElementById('moveLinkCopy').onclick = copyLink;

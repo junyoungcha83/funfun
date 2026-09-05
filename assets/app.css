@@ -42,6 +42,26 @@ body {
   white-space: nowrap;
 }
 .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* 목록 관리 ＋ — 분류가 아니라 도구라서 늘어나지 않고 점선으로 구분한다 */
+.tab-manage { flex: 0 0 auto; min-width: 0; padding: 8px 14px;
+  border-style: dashed; color: var(--primary); font-weight: 800; }
+
+/* 목록 관리 다이얼로그 */
+.cat-add { display: flex; gap: 8px; margin-bottom: 12px; }
+.cat-add input { flex: 1 1 auto; min-width: 0; border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; font-size: 1rem; }
+.cat-list { list-style: none; margin: 0 0 10px; padding: 0;
+  max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.cat-row { display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.cat-name { flex: 1 1 auto; min-width: 0; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-count { flex: 0 0 auto; font-size: .76rem; color: var(--muted); }
+.cat-btn { flex: 0 0 auto; border: 1px solid var(--border); background: #fff;
+  border-radius: 8px; padding: 5px 9px; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.cat-btn.danger { color: #b91c1c; }
+.cat-btn:disabled { opacity: .38; cursor: not-allowed; }
+.cat-note { margin: 0 0 12px; font-size: .76rem; color: var(--muted); line-height: 1.5; }
 
 .app-main { padding: 12px 12px calc(96px + var(--safe-bottom)); max-width: 720px; margin: 0 auto; }
 .empty { text-align: center; color: var(--muted); padding: 56px 16px; font-size: .92rem; }

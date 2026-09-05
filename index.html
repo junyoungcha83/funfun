@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Fun fun</title>
-<link rel="stylesheet" href="assets/app.css?v=17" />
+<link rel="stylesheet" href="assets/app.css?v=18" />
 
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#7c3aed" />
@@ -26,17 +26,8 @@
   </div>
 </header>
 
-<nav class="tabs" id="tabs" role="tablist" aria-label="분류">
-  <button class="tab active" role="tab" data-cat="money"  aria-selected="true">경제</button>
-  <button class="tab"        role="tab" data-cat="estate" aria-selected="false">부동산</button>
-  <button class="tab"        role="tab" data-cat="make"   aria-selected="false">만들기</button>
-  <button class="tab"        role="tab" data-cat="cook"   aria-selected="false">요리</button>
-  <button class="tab"        role="tab" data-cat="trivia" aria-selected="false">정보</button>
-  <button class="tab"        role="tab" data-cat="edu"    aria-selected="false">교육</button>
-  <button class="tab"        role="tab" data-cat="travel" aria-selected="false">여행</button>
-  <button class="tab"        role="tab" data-cat="ai"     aria-selected="false">AI</button>
-  <button class="tab"        role="tab" data-cat="memo"   aria-selected="false">나의메모</button>
-</nav>
+<!-- 탭(목록)은 데이터에서 그린다 — assets/app.js 의 renderTabs() -->
+<nav class="tabs" id="tabs" role="tablist" aria-label="분류"></nav>
 
 <main class="app-main">
   <div class="cards" id="cards"></div>
@@ -77,6 +68,22 @@
   </div>
 </div>
 
+<!-- 목록(탭) 관리 -->
+<dialog id="catDialog" class="dialog">
+  <form method="dialog">
+    <h2>목록 관리</h2>
+    <div class="cat-add">
+      <input type="text" id="catNew" autocomplete="off" placeholder="새 목록 이름" maxlength="12" />
+      <button type="button" class="btn" id="catAdd">추가</button>
+    </div>
+    <ul class="cat-list" id="catList"></ul>
+    <p class="cat-note">안에 든 항목이 있으면 지울 수 없어요. 먼저 옮기거나 지워 주세요.</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="catClose">닫기</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- 등록 모달 -->
 <dialog id="addDialog" class="dialog">
   <form id="addForm" method="dialog">
@@ -88,16 +95,7 @@
     </label>
     <label class="field">
       <span>분류</span>
-      <select id="fCategory">
-        <option value="money">경제</option>
-        <option value="estate">부동산</option>
-        <option value="make">만들기</option>
-        <option value="cook">요리</option>
-        <option value="trivia">정보</option>
-        <option value="edu">교육</option>
-        <option value="travel">여행</option>
-        <option value="ai">AI</option>
-      </select>
+      <select id="fCategory"><!-- fillCategorySelect() 가 채운다 --></select>
     </label>
     <label class="field">
       <span>메모 (선택)</span>
@@ -148,7 +146,7 @@
   </div>
 </dialog>
 
-<script src="assets/app.js?v=17"></script>
+<script src="assets/app.js?v=18"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
