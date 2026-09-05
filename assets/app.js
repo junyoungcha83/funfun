@@ -454,10 +454,26 @@ async function copyLink(){
   setTimeout(() => document.getElementById('moveDialog').close(), 800);
 }
 
-// 임베드 가능한 iframe src 로 변환 (YouTube·Facebook 등은 전용 임베드 사용)
+// X(트위터) 글 주소에서 글 번호를 뽑는다. x.com·twitter.com 둘 다 쓴다.
+//   https://x.com/누구/status/1234567890  ·  .../statuses/123  ·  뒤에 ?s=20 같은 게 붙기도 한다
+function xTweetId(u){
+  try {
+    const url = new URL(u);
+    const h = url.hostname.replace(/^www\./, '').replace(/^mobile\./, '');
+    if (h !== 'x.com' && h !== 'twitter.com') return '';
+    const m = url.pathname.match(/\/status(?:es)?\/(\d+)/);
+    return m ? m[1] : '';
+  } catch { return ''; }
+}
+
+// 임베드 가능한 iframe src 로 변환 (YouTube·X·Facebook 등은 전용 임베드 사용)
 function embedSrc(url){
   const vid = ytId(url);
   if (vid) return `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`;
+  // x.com 은 x-frame-options: SAMEORIGIN 이라 주소를 그대로 넣으면 흰 화면만 뜬다.
+  // 공식 임베드(platform.twitter.com)는 프레임 제한이 없어 영상까지 재생된다.
+  const tw = xTweetId(url);
+  if (tw) return `https://platform.twitter.com/embed/Tweet.html?id=${tw}&theme=light&lang=ko&dnt=true`;
   try {
     const h = new URL(url).hostname.replace(/^www\./, '');
     const isFb = h === 'facebook.com' || h.endsWith('.facebook.com') || h === 'fb.watch' || h === 'fb.com' || h === 'm.facebook.com';
@@ -479,6 +495,9 @@ function nonEmbeddable(url){
     const isFb = h.endsWith('facebook.com') || h === 'fb.watch' || h === 'fb.com';
     if (isFb && /\/(reel|reels|share|stories|story)\b/i.test(u.pathname)) return 'facebook';
     if (h.endsWith('instagram.com') || h.endsWith('tiktok.com')) return h.split('.').slice(-2,-1)[0];
+    // X 는 글 하나(status)만 임베드된다. 프로필·홈·검색 주소는 통째로 막혀 있다.
+    const hx = h.replace(/^mobile\./, '');
+    if ((hx === 'x.com' || hx === 'twitter.com') && !xTweetId(url)) return 'x';
     return '';
   } catch { return ''; }
 }
@@ -492,7 +511,8 @@ function openViewer(url){
   if (svc) {
     // 임베드 불가 — 빈 화면 대신 안내 + 큰 열기 버튼
     frame.src = 'about:blank'; frame.classList.add('hidden');
-    const name = svc === 'facebook' ? '페이스북' : svc === 'instagram' ? '인스타그램' : svc === 'tiktok' ? '틱톡' : '원본 서비스';
+    const name = svc === 'facebook' ? '페이스북' : svc === 'instagram' ? '인스타그램'
+               : svc === 'tiktok' ? '틱톡' : svc === 'x' ? 'X' : '원본 서비스';
     document.getElementById('viewerFallbackMsg').innerHTML =
       `이 영상은 ${name} 정책상 앱 안에서 재생할 수 없어요.<br/>아래 버튼으로 ${name}에서 열면 재생됩니다.`;
     document.getElementById('viewerFallbackOpen').href = url;
